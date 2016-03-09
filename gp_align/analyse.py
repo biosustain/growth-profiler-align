@@ -6,6 +6,7 @@ import os
 import numpy as np
 import pandas as pd
 
+CANNY_SIGMA = 1
 
 def analyse_run(image_list, plate_type=1, parse_dates=True, orientation="bottom_left"):
     """
@@ -38,8 +39,8 @@ def analyse_run(image_list, plate_type=1, parse_dates=True, orientation="bottom_
     calibration_left = calibration_left / calibration_left.max()  # Normalise to values between 0 and 1
     calibration_right = calibration_right / calibration_right.max()  # Normalise to values between 0 and 1
 
-    calibration_left = skimage.feature.canny(calibration_left, 1)
-    calibration_right = skimage.feature.canny(calibration_right, 1)
+    calibration_left = skimage.feature.canny(calibration_left, CANNY_SIGMA)
+    calibration_right = skimage.feature.canny(calibration_right, CANNY_SIGMA)
 
     for image_name in sorted_image_list:
         # print(image_name)
@@ -56,7 +57,7 @@ def analyse_run(image_list, plate_type=1, parse_dates=True, orientation="bottom_
                 calibration_plate = calibration_right
                 calibration_name = calibration_name_right
 
-            edge_image = skimage.feature.canny(plate_image, 1)
+            edge_image = skimage.feature.canny(plate_image, CANNY_SIGMA)
             offset = gp_align.align.align_plates(edge_image, calibration_plate)  # Align the (edged) plate image with calibration to find the offset
             well_names = gp_align.util.list_of_well_names(rows, columns, orientation)
 
