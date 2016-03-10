@@ -40,8 +40,6 @@ def analyse_run(image_list, plate_type=1, parse_dates=True, orientation="bottom_
     else:
         time_list, sorted_image_list = list(range(len(image_list))), image_list
 
-    plate_names = ["plate1", "plate2", "plate3", "plate4", "plate5", "plate6"]
-
     data = {}
 
     calibration_name_left = "calibration_type_"+str(plate_type)+"_left"
