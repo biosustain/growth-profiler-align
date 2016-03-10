@@ -8,7 +8,7 @@ import pandas as pd
 
 CANNY_SIGMA = 1
 
-def analyse_run(image_list, plate_type=1, parse_dates=True, orientation="bottom_left"):
+def analyse_run(image_list, plate_type=1, parse_dates=True, orientation="bottom_left", plates=None, plate_names=None):
     """
     Analyse a list of images from the Growth Profiler.
 
@@ -16,9 +16,24 @@ def analyse_run(image_list, plate_type=1, parse_dates=True, orientation="bottom_
     plate_type: The type of plates used
     parse_dates: Whether to sort the images by time. The image_names must of format '%d%m%Y%H%M%S'
     orientation: The orientation of the plates in the machine. The corner where A1 is located.
+    plates: Specify which plates will be analysed e.g. [1, 2, 3] for the three left plates.
+        Default (None) is to analyze all plates.
     """
+    if plate_names is None:
+        plate_names = ["tray1", "tray2", "tray3", "tray4", "tray5", "tray6"]
+
+    wrong_plate_name_error = ValueError("Length of plate_names must correspond to length of plates")
+    if plates is None:
+        if len(plate_names) != 6:
+            raise wrong_plate_name_error
+    else:
+        if len(plate_names) != len(plates):
+            raise wrong_plate_name_error
 
     rows, columns = gp_align.plate_specs["rows_and_columns"][str(plate_type)]
+
+    if plates is not None:
+        raise NotImplementedError()
 
     if parse_dates:
         time_list, sorted_image_list = gp_align.parse_time.sort_filenames(image_list)
@@ -26,8 +41,6 @@ def analyse_run(image_list, plate_type=1, parse_dates=True, orientation="bottom_
         time_list, sorted_image_list = list(range(len(image_list))), image_list
 
     plate_names = ["plate1", "plate2", "plate3", "plate4", "plate5", "plate6"]
-
-    skip_plates = set()
 
     data = {}
 
