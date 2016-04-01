@@ -4,7 +4,7 @@ from setuptools import setup
 
 requirements = [
       "numpy",
-      "skikit-image",
+      "scikit-image",
       "scipy",
       "pandas"
 ]
