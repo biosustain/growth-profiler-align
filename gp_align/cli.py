@@ -1,4 +1,5 @@
 import argparse
+import os
 from gp_align.analyse import analyse_run
 
 parser = argparse.ArgumentParser(description="Analyse growth profiler images")
@@ -8,7 +9,10 @@ subparsers = parser.add_subparsers()
 
 
 def analyse_images(args):
-    filenames = [f.name for f in args.infiles]
+    filenames = [f for f in args.infiles]
+    for filename in filenames:
+        if not os.path.isfile(filename):
+            raise ValueError(filename, "does not exist")
 
     outname = args.out
 
@@ -29,7 +33,7 @@ def analyse_images(args):
 analyse_parser = subparsers.add_parser(
     "analyse", help="Analyse a list of growth profiler images and output a tsv file with growth curves"
 )
-analyse_parser.add_argument("infiles", type=argparse.FileType("r"), nargs="+")
+analyse_parser.add_argument("infiles", type=str, nargs="+")
 analyse_parser.add_argument("--out", type=str, default="result")
 analyse_parser.add_argument("--orientation", type=str, default="top_right", choices=["top_right", "bottom_left"])
 analyse_parser.add_argument("--plate_type", type=int, default=1)
