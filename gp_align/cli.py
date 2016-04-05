@@ -1,5 +1,6 @@
 import argparse
 import os
+import glob
 from gp_align.analyse import analyse_run
 
 parser = argparse.ArgumentParser(description="Analyse growth profiler images")
@@ -9,7 +10,13 @@ subparsers = parser.add_subparsers()
 
 
 def analyse_images(args):
-    filenames = [f for f in args.infiles]
+    filenames = []
+    for f in args.infiles:
+        if "*" in f:
+            filenames.extend(glob.glob(f))
+        else:
+            filenames.append(f)
+
     for filename in filenames:
         if not os.path.isfile(filename):
             raise ValueError(filename, "does not exist")
