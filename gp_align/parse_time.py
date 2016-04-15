@@ -1,6 +1,7 @@
 from __future__ import division, absolute_import, print_function
 
 import datetime
+import os
 
 
 def fix_date(datetime_string):
@@ -20,7 +21,7 @@ def convert_to_datetime(string):
 
 def sort_filenames(image_list):
     date_dict = {
-        image_name: convert_to_datetime(fix_date(image_name.split("/")[-1].split(".")[0])) for image_name in image_list
+        image_name: convert_to_datetime(fix_date(os.path.split(image_name)[-1].split(".")[0])) for image_name in image_list
     }
     sorted_image_list = sorted(image_list, key=date_dict.get)
     time_list = [

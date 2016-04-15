@@ -10,6 +10,7 @@ import pandas as pd
 
 CANNY_SIGMA = 1
 
+
 def analyse_run(image_list, plate_type=1, parse_dates=True, orientation="bottom_left", plates=None, plate_names=None):
     """
     Analyse a list of images from the Growth Profiler.
