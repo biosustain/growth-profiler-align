@@ -1,3 +1,5 @@
+from __future__ import division, absolute_import, print_function
+
 import numpy as np
 
 
@@ -39,8 +41,8 @@ def split_image_in_n(image, n_height=3, n_width=2):
         for i in range(n_height):
             output.append(
                 np.array(image[
-                    i*height//n_height:(i+1)*height//n_height,
-                    j*width//n_width:(j+1)*width//n_width
-                ]) # Take "slices" out of the image
+                    i*height // n_height: (i+1)*height // n_height,
+                    j*width // n_width: (j+1)*width // n_width
+                ])  # Take "slices" out of the image
             )
     return output
