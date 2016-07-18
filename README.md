@@ -29,6 +29,7 @@ Before installing this package you need some other Python packages that should b
 ## Usage
 
 ### Analysing the images
+- Navigate to the directory where you want the output files to be placed
 - Figure out which plate type was used for the run and use the number in the subsequent commands:
   - Black 96 well (PLATE_TYPE=1)
   - White 96 well (PLATE_TYPE=2)
@@ -37,6 +38,7 @@ Before installing this package you need some other Python packages that should b
 - To analyse the plates in scanner 2, run `python -m gp_align analyse --scanner 2 --plate_type PLATE_TYPE --out NAME_THAT_YOU_DECIDE "PATH/TO/YOUR/DATA/Scanner 2/*.Png"`
 - The output files will be placed in your current working directory and will be named NAME_THAT_YOU_DECIDE_tray1 (_tray2 etc.). See below how the trays are organised in the scanners
 - NOTE: You should place your plates such that A1 is in the upper right corner. Otherwise you should add the argument `--orientation bottom_left` to the above commands)
+
 
 Tray layouts:
 
