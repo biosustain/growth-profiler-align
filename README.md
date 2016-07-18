@@ -20,7 +20,7 @@ Before installing this package you need some other Python packages that should b
 
 
 ### Installing the Growth Profiler Image Analyser (gp_align)
-- Clone the package (http://github.com/biosustain/growth-profiler-align
+- Clone the package (http://github.com/biosustain/growth-profiler-align)
 - Open a terminal
 - Go to the directory you cloned the package into
 - run `pip install -e .`
@@ -37,7 +37,7 @@ Before installing this package you need some other Python packages that should b
 - To analyse the plates in scanner 1, run `python -m gp_align analyse --scanner 1 --plate_type PLATE_TYPE --out NAME_THAT_YOU_DECIDE "PATH/TO/YOUR/DATA/Scanner 1/*.Png"`
 - To analyse the plates in scanner 2, run `python -m gp_align analyse --scanner 2 --plate_type PLATE_TYPE --out NAME_THAT_YOU_DECIDE "PATH/TO/YOUR/DATA/Scanner 2/*.Png"`
 - The output files will be placed in your current working directory and will be named NAME_THAT_YOU_DECIDE_tray1 (_tray2 etc.). See below how the trays are organised in the scanners
-- NOTE: You should place your plates such that A1 is in the upper right corner. Otherwise you should add the argument `--orientation bottom_left` to the above commands)
+- NOTE: You should place your plates such that A1 is in the upper right corner. Otherwise you should add the argument `--orientation bottom_left` to the above commands
 
 
 Tray layouts:
@@ -61,4 +61,4 @@ Tray layouts:
 ### Converting the G-values to OD
 - Obtain a set of calibration parameters (A, B, C) from Kristian
 - Run `python -m gp_align convert A B C file1 file2 file3 (etc)`
-- (To convert all the G-value files in your current working directory run `python -m gp_align convert A B C *.G.tsv`
+- (To convert all the G-value files in your current working directory run `python -m gp_align convert A B C *.G.tsv`)
