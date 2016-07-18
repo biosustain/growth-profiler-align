@@ -49,3 +49,45 @@ analyse_parser.add_argument("--plate_type", type=int, default=1)
 analyse_parser.add_argument("--scanner", type=int, default=1, choices=[1, 2])
 analyse_parser.set_defaults(func=analyse_images)
 
+
+def convert_g_values(args):
+    import numpy as np
+    import pandas as pd
+
+    def convert_G_to_OD(val, A, B, C):
+        return np.exp((val - C) / A) - B
+
+    parameters = args.parameters
+    inputs = args.files
+
+    parameters = list(map(float, parameters))
+    print(parameters)
+
+    filenames = []
+    for f in inputs:
+        if "*" in f:
+            filenames.extend(glob.glob(f))
+        else:
+            filenames.append(f)
+
+    for filename in filenames:
+        if not os.path.isfile(filename):
+            raise ValueError(filename, "does not exist")
+        if not filename.endswith(".G.tsv"):
+            raise ValueError(filename, "does not end with .G.tsv")
+
+    for filename in filenames:
+        df = pd.read_csv(filename, sep="\t", index_col=0)
+
+        converted_df = convert_G_to_OD(df, *parameters)
+        converted_df.index = converted_df.index / 60
+
+        outname = filename[:-5] + "OD.v2.tsv"
+        converted_df.to_csv(outname, sep="\t")
+
+convert_parser = subparsers.add_parser(
+    "convert", help="Convert the output G-value files to OD-values, using a set of calibration parameters."
+)
+convert_parser.add_argument("parameters", type=str, nargs=3)
+convert_parser.add_argument("files", type=str, nargs="+")
+convert_parser.set_defaults(func=convert_g_values)
