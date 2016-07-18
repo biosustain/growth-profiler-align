@@ -24,7 +24,7 @@ Before installing this package you need some other Python packages that should b
 - Open a terminal
 - Go to the directory you cloned the package into
 - run `pip install -e .`
-- Go to your home directory and confirm that `python -c 'import gp_align'` runs without error
+- Go to your home directory and confirm that `python -c "import gp_align"` runs without error
 
 ## Usage
 
