@@ -1,14 +1,98 @@
-from __future__ import division, absolute_import, print_function
+# -*- coding: utf-8 -*-
 
-import argparse
+# Copyright 2017 Novo Nordisk Foundation Center for Biosustainability,
+# Technical University of Denmark.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""The analysis and conversion command line interface."""
+
+from __future__ import absolute_import
+
+import logging
 import os
-import glob
-from gp_align.analyse import analyse_run
+from glob import glob
 
-parser = argparse.ArgumentParser(description="Analyse growth profiler images")
-parser.set_defaults(func=lambda args: parser.print_help())
+import click
+import click_log
+from six import iteritems
 
-subparsers = parser.add_subparsers()
+from gp_align.analyze import analyze_run
+
+
+LOGGER = logging.getLogger(__name__)
+click_log.basic_config(LOGGER)
+
+
+@click.group()
+@click.help_option("--help", "-h")
+@click_log.simple_verbosity_option(
+    LOGGER, default="INFO", show_default=True,
+    type=click.Choice(["CRITICAL", "ERROR", "WARN", "INFO", "DEBUG"]))
+def cli():
+    """
+    Growth profiler raw image analysis.
+
+    Based on calibration images this tool extracts G values from a
+    series of images and can later convert them to OD values.
+    """
+    pass
+
+
+@cli.command()
+@click.help_option("--help", "-h")
+@click.option("--out", "-o", default="result", show_default=True,
+              help="The base output filename. (Will have appended tray "
+                   "suffixes.)")
+@click.option("--orientation", type=click.Choice(["top-right", "bottom-left"]),
+              default="top-right", show_default=True,
+              help="The corner position of plate well A1.")
+@click.option("--plate-type", type=click.IntRange(min=1, max=3),
+              default=1, show_default=True,
+              help="The plate type where 1 = 96 wells, 2 = 96 deep wells, "
+                   "and 3 = 24 wells.")
+@click.option("--scanner", type=click.IntRange(min=1, max=2),
+              default=1, show_default=True,
+              help="The scanner used 1 = left, 2 = right.")
+@click.argument("pattern", type=str)
+def analyze(pattern, scanner, plate_type, orientation, out):
+    """
+    Analyze a series of images.
+
+    The provided pattern is interpreted just like a shell glob.
+    """
+    filenames = glob(pattern)
+    if len(filenames) == 0:
+        LOGGER.critical("No files match the given glob pattern.")
+        return 1
+    data = analyze_run(filenames, scanner, plate_type, orientation=orientation)
+
+    for name, df in iteritems(data):
+        df.to_csv(out + "_" + name + ".G.tsv", sep="\t")
+
+
+@cli.command()
+@click.help_option("--help", "-h")
+@click.argument("parameters", nargs=3)
+@click.argument("files", nargs=-1)
+def convert():
+    """
+    Convert tabular G values to equivalent tables of OD values.
+
+    Provided with three parameters for fitting the logistic function, convert
+    all the given files to OD values.
+    """
+    pass
 
 
 def analyse_images(args):
@@ -33,21 +117,6 @@ def analyse_images(args):
     plate_type = args.plate_type
     orientation = args.orientation
 
-    data = analyse_run(filenames, plate_type, orientation=orientation, plate_names=plate_names)
-
-    for name, df in data.items():
-        df.to_csv(outname + "_" + name + ".G.tsv", sep="\t")
-
-
-analyse_parser = subparsers.add_parser(
-    "analyse", help="Analyse a list of growth profiler images and output a tsv file with growth curves"
-)
-analyse_parser.add_argument("infiles", type=str, nargs="+")
-analyse_parser.add_argument("--out", type=str, default="result")
-analyse_parser.add_argument("--orientation", type=str, default="top_right", choices=["top_right", "bottom_left"])
-analyse_parser.add_argument("--plate_type", type=int, default=1)
-analyse_parser.add_argument("--scanner", type=int, default=1, choices=[1, 2])
-analyse_parser.set_defaults(func=analyse_images)
 
 
 def convert_g_values(args):
@@ -84,10 +153,3 @@ def convert_g_values(args):
 
         outname = filename[:-5] + "OD.v2.tsv"
         converted_df.to_csv(outname, sep="\t")
-
-convert_parser = subparsers.add_parser(
-    "convert", help="Convert the output G-value files to OD-values, using a set of calibration parameters."
-)
-convert_parser.add_argument("parameters", type=str, nargs=3)
-convert_parser.add_argument("files", type=str, nargs="+")
-convert_parser.set_defaults(func=convert_g_values)

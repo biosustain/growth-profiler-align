@@ -1,13 +1,11 @@
 from __future__ import absolute_import, division, print_function
 
 import json
-import os
+import io
+from os.path import join, dirname
 from gp_align import util
 from gp_align import align
-from gp_align import analyse
+from gp_align import analyze
 from gp_align import parse_time
-
-with open(os.path.join(os.path.dirname(__file__), "data/plate_specs.json")) as infile:
-    plate_specs = json.load(infile)
 
 
