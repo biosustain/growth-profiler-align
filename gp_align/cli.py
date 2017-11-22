@@ -22,6 +22,7 @@ from __future__ import absolute_import
 import logging
 import os
 from glob import glob
+from multiprocessing import cpu_count
 
 import click
 import click_log
@@ -30,7 +31,7 @@ from six import iteritems
 from gp_align.analyze import analyze_run
 
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger()
 click_log.basic_config(LOGGER)
 
 
@@ -64,8 +65,10 @@ def cli():
 @click.option("--scanner", type=click.IntRange(min=1, max=2),
               default=1, show_default=True,
               help="The scanner used 1 = left, 2 = right.")
+@click.option("--processes", "-p", type=int, default=cpu_count(),
+              show_default=True, help="Select the number of processes to use.")
 @click.argument("pattern", type=str)
-def analyze(pattern, scanner, plate_type, orientation, out):
+def analyze(pattern, scanner, plate_type, orientation, out, processes):
     """
     Analyze a series of images.
 
@@ -75,10 +78,11 @@ def analyze(pattern, scanner, plate_type, orientation, out):
     if len(filenames) == 0:
         LOGGER.critical("No files match the given glob pattern.")
         return 1
-    data = analyze_run(filenames, scanner, plate_type, orientation=orientation)
+    data = analyze_run(filenames, scanner, plate_type, orientation=orientation,
+                       num_proc=processes)
 
     for name, df in iteritems(data):
-        df.to_csv(out + "_" + name + ".G.tsv", sep="\t")
+        df.to_csv(out + "_" + name + ".G.tsv", sep="\t", index=False)
 
 
 @cli.command()
@@ -93,30 +97,6 @@ def convert():
     all the given files to OD values.
     """
     pass
-
-
-def analyse_images(args):
-    filenames = []
-    for f in args.infiles:
-        if "*" in f:
-            filenames.extend(glob.glob(f))
-        else:
-            filenames.append(f)
-
-    for filename in filenames:
-        if not os.path.isfile(filename):
-            raise ValueError(filename, "does not exist")
-
-    outname = args.out
-
-    if args.scanner == 1:
-        plate_names = None
-    elif args.scanner == 2:
-        plate_names = ["tray7", "tray8", "tray9", "tray10", "tray11", "tray12"]
-
-    plate_type = args.plate_type
-    orientation = args.orientation
-
 
 
 def convert_g_values(args):
