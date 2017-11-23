@@ -62,8 +62,8 @@ def cli():
               help="The corner position of plate well A1.")
 @click.option("--plate-type", type=click.IntRange(min=1, max=3),
               default=1, show_default=True,
-              help="The plate type where 1 = 96 wells, 2 = 96 deep wells, "
-                   "and 3 = 24 wells.")
+              help="The plate type where 1 = 96 black wells, 2 = 96 white "
+                   "wells, and 3 = 24 wells.")
 @click.option("--scanner", type=click.IntRange(min=1, max=2),
               default=1, show_default=True,
               help="The scanner used 1 = left, 2 = right.")
