@@ -58,7 +58,9 @@ def cut_image(image, n_height=3, n_width=2):
 
     The returned order is column-wise left-to-right."""
     height, width = image.shape
-    output = []
+    output = list()
+    # TODO: Use `numpy.array.strides`, for example,
+    # https://stackoverflow.com/a/30110497
     for j in range(n_width):
         for i in range(n_height):
             output.append(

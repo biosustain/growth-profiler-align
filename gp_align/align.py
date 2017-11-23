@@ -15,8 +15,9 @@ def align_plates(plate_image, calibration_plate):
     r = int(RADIUS)
     best_offset = (0, 0)
     best_value = 0
-    for i in np.linspace(-r, r, 2*r+1).astype(int):
-        for j in np.linspace(-r, r, 2*r+1).astype(int):
+    # TODO: Potentially use vectorized numpy functions here.
+    for i in np.arange(-r, r, 2 * r + 1):
+        for j in np.arange(-r, r, 2 * r + 1):
             value = compare_images(plate_image, calibration_plate, i, j)
             if value > best_value:
                 best_value = value

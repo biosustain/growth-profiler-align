@@ -20,15 +20,17 @@
 from __future__ import absolute_import
 
 import logging
-import os
 from glob import glob
 from multiprocessing import cpu_count
 
 import click
 import click_log
+from pandas import read_csv
 from six import iteritems
+from tqdm import tqdm
 
-from gp_align.analyze import analyze_run
+from gp_align.analysis import analyze_run
+from gp_align.conversion import convert_run
 
 
 LOGGER = logging.getLogger()
@@ -65,10 +67,15 @@ def cli():
 @click.option("--scanner", type=click.IntRange(min=1, max=2),
               default=1, show_default=True,
               help="The scanner used 1 = left, 2 = right.")
+@click.option("--time-unit", default="h", type=click.Choice(["D", "h", "m"]),
+              show_default=True,
+              help="The unit of time can be either day = D, hour = h, "
+                   "or minute = m.")
 @click.option("--processes", "-p", type=int, default=cpu_count(),
               show_default=True, help="Select the number of processes to use.")
 @click.argument("pattern", type=str)
-def analyze(pattern, scanner, plate_type, orientation, out, processes):
+def analyze(pattern, scanner, plate_type, orientation, out, time_unit,
+            processes):
     """
     Analyze a series of images.
 
@@ -79,7 +86,7 @@ def analyze(pattern, scanner, plate_type, orientation, out, processes):
         LOGGER.critical("No files match the given glob pattern.")
         return 1
     data = analyze_run(filenames, scanner, plate_type, orientation=orientation,
-                       num_proc=processes)
+                       unit=time_unit, num_proc=processes)
 
     for name, df in iteritems(data):
         df.to_csv(out + "_" + name + ".G.tsv", sep="\t", index=False)
@@ -88,48 +95,27 @@ def analyze(pattern, scanner, plate_type, orientation, out, processes):
 @cli.command()
 @click.help_option("--help", "-h")
 @click.argument("parameters", nargs=3)
-@click.argument("files", nargs=-1)
-def convert():
+@click.argument("pattern", type=str)
+def convert(pattern, parameters):
     """
     Convert tabular G values to equivalent tables of OD values.
 
-    Provided with three parameters for fitting the logistic function, convert
+    Provided with three parameters for fitting an exponential function, convert
     all the given files to OD values.
     """
-    pass
-
-
-def convert_g_values(args):
-    import numpy as np
-    import pandas as pd
-
-    def convert_G_to_OD(val, A, B, C):
-        return np.exp((val - C) / A) - B
-
-    parameters = args.parameters
-    inputs = args.files
-
-    parameters = list(map(float, parameters))
-    print(parameters)
-
-    filenames = []
-    for f in inputs:
-        if "*" in f:
-            filenames.extend(glob.glob(f))
-        else:
-            filenames.append(f)
-
-    for filename in filenames:
-        if not os.path.isfile(filename):
-            raise ValueError(filename, "does not exist")
-        if not filename.endswith(".G.tsv"):
-            raise ValueError(filename, "does not end with .G.tsv")
-
-    for filename in filenames:
-        df = pd.read_csv(filename, sep="\t", index_col=0)
-
-        converted_df = convert_G_to_OD(df, *parameters)
-        converted_df.index = converted_df.index / 60
-
-        outname = filename[:-5] + "OD.v2.tsv"
-        converted_df.to_csv(outname, sep="\t")
+    filenames = glob(pattern)
+    if len(filenames) == 0:
+        LOGGER.critical("No files match the given glob pattern.")
+        return 1
+    parameters = tuple(map(float, parameters))
+    for path in tqdm(filenames):
+        if not path.endswith(".G.tsv"):
+            LOGGER.error("'%s' does not end with '.G.tsv'.", path)
+            continue
+        try:
+            df = read_csv(path, sep="\t")
+        except OSError as err:
+            LOGGER.error(str(err))
+            continue
+        df = convert_run(df, *parameters)
+        df.to_csv(path[:-5] + "OD.tsv", sep="\t", index=False)

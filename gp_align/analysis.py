@@ -26,7 +26,7 @@ import multiprocessing
 from os.path import join, dirname, basename, splitext
 
 import numpy as np
-from pandas import DataFrame
+from pandas import DataFrame, Timedelta
 from skimage.color import rgb2grey
 from skimage.feature import canny
 from skimage.io import imread
@@ -47,7 +47,7 @@ PLATES = {
 
 
 def analyze_run(images, scanner=1, plate_type=1, orientation="top-right",
-                plates=None, num_proc=1):
+                plates=None, unit="h", num_proc=1):
     """
     Analyse a list of images from the Growth Profiler.
 
@@ -57,9 +57,13 @@ def analyze_run(images, scanner=1, plate_type=1, orientation="top-right",
     orientation: The orientation of the plates in the machine. The corner where A1 is located.
     plates: Specify which plates will be analysed e.g. [1, 2, 3] for the three left plates.
         Default (None) is to analyze all plates.
+    unit : {'D', 'h', 'm'}, optional
+        The unit of time. Any valid numpy datetime unit but usefully either
+        D, h, or m.
     num_proc : int, optional
         Number of processes to use for the calculations.
     """
+    unit = Timedelta(1, unit=unit)
     if plates is not None:
         raise NotImplementedError(
             "Selection of specific plates or trays is not possible yet.")
@@ -94,6 +98,8 @@ def analyze_run(images, scanner=1, plate_type=1, orientation="top-right",
         assert len(plate_df.columns) == len(columns), "{:d} != {:d}".format(
             len(plate_df.columns), len(columns))
         plate_df.sort_values("time", inplace=True)
+        plate_df["time"] -= plate_df["time"].iat[0]
+        plate_df["time"] /= unit
         output[plate] = plate_df.loc[:, columns]  # order columns
     return output
 
@@ -144,7 +150,10 @@ def analyze_image(filename):
     columns = config["columns"]
     well_names = config["well_names"]
 
-    image = rgb2grey(imread(filename))
+    try:
+        image = rgb2grey(imread(filename))
+    except OSError as err:
+        return {"error": str(err), "filename": filename}
 
     plate_images = cut_image(image)
 
