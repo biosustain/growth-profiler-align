@@ -15,9 +15,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Analyze growth profiler images."""
+"""Provide useful helper functions."""
 
-from __future__ import absolute_import
+from __future__ import absolute_import, division
 
 from string import ascii_uppercase
 
@@ -65,8 +65,8 @@ def cut_image(image, n_height=3, n_width=2):
         for i in range(n_height):
             output.append(
                 np.array(image[
-                    i*height // n_height: (i+1)*height // n_height,
-                    j*width // n_width: (j+1)*width // n_width
+                    i * height // n_height: (i + 1) * height // n_height,
+                    j * width // n_width: (j + 1) * width // n_width
                 ])  # Take "slices" out of the image
             )
     return output

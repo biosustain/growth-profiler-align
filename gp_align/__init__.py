@@ -1,11 +1,24 @@
-from __future__ import absolute_import, division, print_function
+# -*- coding: utf-8 -*-
 
-import json
-import io
-from os.path import join, dirname
-from gp_align import util
-from gp_align import align
-from gp_align import analysis
-from gp_align import parse_time
+# Copyright 2017 Novo Nordisk Foundation Center for Biosustainability,
+# Technical University of Denmark.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
+"""Growth profiler image analysis."""
 
+from __future__ import absolute_import
+
+__author__ = "Kristian Jensen"
+__email__ = "krisj@biosustain.dtu.dk"
+__version__ = "0.1.0"

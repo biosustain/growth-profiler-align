@@ -51,12 +51,13 @@ def analyze_run(images, scanner=1, plate_type=1, orientation="top-right",
     """
     Analyse a list of images from the Growth Profiler.
 
-    Parameters:
-    plate_type: The type of plates used
-    parse_dates: Whether to sort the images by time. The image_names must of format '%d%m%Y%H%M%S'
-    orientation: The orientation of the plates in the machine. The corner where A1 is located.
-    plates: Specify which plates will be analysed e.g. [1, 2, 3] for the three left plates.
-        Default (None) is to analyze all plates.
+    Parameters
+    ----------
+    plate_type :
+        The type of plates used
+    plates : optional
+        Specify which plates will be analysed e.g. [1, 2, 3] for the three left
+        plates. Default (None) is to analyze all plates.
     unit : {'D', 'h', 'm'}, optional
         The unit of time. Any valid numpy datetime unit but usefully either
         D, h, or m.
@@ -209,4 +210,3 @@ def find_well_intensity(image, center, radius=4, n_mean=10):
     im_slice.sort()
     darkest = np.percentile(im_slice[:n_mean], 50)
     return darkest
-
