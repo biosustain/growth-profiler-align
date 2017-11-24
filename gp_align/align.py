@@ -19,7 +19,7 @@
 
 from __future__ import absolute_import
 
-import numpy as np
+from numpy import asarray
 
 
 RADIUS = 20
@@ -40,14 +40,14 @@ def align_plates(plate_image, calibration_plate):
     r = int(RADIUS)
     best_offset = (0, 0)
     best_value = 0
-    for i in np.arange(-r, r + 1):
-        for j in np.arange(-r, r + 1):
+    for i in range(-r, r + 1):
+        for j in range(-r, r + 1):
             value = compare_images(plate_image, calibration_plate, i, j)
             if value > best_value:
                 best_value = value
                 best_offset = (i, j)
     # TODO: Validate that the images are properly aligned (`best_value`).
-    return np.array(best_offset)
+    return asarray(best_offset)
 
 
 def compare_images(image1, image2, x, y):
