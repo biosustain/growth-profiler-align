@@ -1,93 +1,122 @@
-from __future__ import division, absolute_import, print_function
+# -*- coding: utf-8 -*-
 
-import argparse
-import os
-import glob
-from gp_align.analyse import analyse_run
+# Copyright 2017 Novo Nordisk Foundation Center for Biosustainability,
+# Technical University of Denmark.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-parser = argparse.ArgumentParser(description="Analyse growth profiler images")
-parser.set_defaults(func=lambda args: parser.print_help())
+"""The analysis and conversion command line interface."""
 
-subparsers = parser.add_subparsers()
+from __future__ import absolute_import
 
+import logging
+from glob import glob
+from multiprocessing import cpu_count
 
-def analyse_images(args):
-    filenames = []
-    for f in args.infiles:
-        if "*" in f:
-            filenames.extend(glob.glob(f))
-        else:
-            filenames.append(f)
+import click
+import click_log
+from pandas import read_csv
+from six import iteritems
+from tqdm import tqdm
 
-    for filename in filenames:
-        if not os.path.isfile(filename):
-            raise ValueError(filename, "does not exist")
-
-    outname = args.out
-
-    if args.scanner == 1:
-        plate_names = None
-    elif args.scanner == 2:
-        plate_names = ["tray7", "tray8", "tray9", "tray10", "tray11", "tray12"]
-
-    plate_type = args.plate_type
-    orientation = args.orientation
-
-    data = analyse_run(filenames, plate_type, orientation=orientation, plate_names=plate_names)
-
-    for name, df in data.items():
-        df.to_csv(outname + "_" + name + ".G.tsv", sep="\t")
+from gp_align.analysis import analyze_run
+from gp_align.conversion import g2od
 
 
-analyse_parser = subparsers.add_parser(
-    "analyse", help="Analyse a list of growth profiler images and output a tsv file with growth curves"
-)
-analyse_parser.add_argument("infiles", type=str, nargs="+")
-analyse_parser.add_argument("--out", type=str, default="result")
-analyse_parser.add_argument("--orientation", type=str, default="top_right", choices=["top_right", "bottom_left"])
-analyse_parser.add_argument("--plate_type", type=int, default=1)
-analyse_parser.add_argument("--scanner", type=int, default=1, choices=[1, 2])
-analyse_parser.set_defaults(func=analyse_images)
+LOGGER = logging.getLogger()
+click_log.basic_config(LOGGER)
 
 
-def convert_g_values(args):
-    import numpy as np
-    import pandas as pd
+@click.group()
+@click.help_option("--help", "-h")
+@click_log.simple_verbosity_option(
+    LOGGER, default="INFO", show_default=True,
+    type=click.Choice(["CRITICAL", "ERROR", "WARN", "INFO", "DEBUG"]))
+def cli():
+    """
+    Growth profiler raw image analysis.
 
-    def convert_G_to_OD(val, A, B, C):
-        return np.exp((val - C) / A) - B
+    Based on calibration images this tool extracts G values from a
+    series of images and can later convert them to OD values.
+    """
+    pass
 
-    parameters = args.parameters
-    inputs = args.files
 
-    parameters = list(map(float, parameters))
-    print(parameters)
+@cli.command()
+@click.help_option("--help", "-h")
+@click.option("--out", "-o", default="result", show_default=True,
+              help="The base output filename. (Will have appended tray "
+                   "suffixes.)")
+@click.option("--orientation", type=click.Choice(["top-right", "bottom-left"]),
+              default="top-right", show_default=True,
+              help="The corner position of plate well A1.")
+@click.option("--plate-type", type=click.IntRange(min=1, max=3),
+              default=1, show_default=True,
+              help="The plate type where 1 = 96 black wells, 2 = 96 white "
+                   "wells, and 3 = 24 wells.")
+@click.option("--scanner", type=click.IntRange(min=1, max=2),
+              default=1, show_default=True,
+              help="The scanner used 1 = left, 2 = right.")
+@click.option("--time-unit", default="h", type=click.Choice(["D", "h", "m"]),
+              show_default=True,
+              help="The unit of time can be either day = D, hour = h, "
+                   "or minute = m.")
+@click.option("--processes", "-p", type=int, default=cpu_count(),
+              show_default=True, help="Select the number of processes to use.")
+@click.argument("pattern", type=str)
+def analyze(pattern, scanner, plate_type, orientation, out, time_unit,
+            processes):
+    """
+    Analyze a series of images.
 
-    filenames = []
-    for f in inputs:
-        if "*" in f:
-            filenames.extend(glob.glob(f))
-        else:
-            filenames.append(f)
+    The provided pattern is interpreted just like a shell glob.
+    """
+    filenames = glob(pattern)
+    if len(filenames) == 0:
+        LOGGER.critical("No files match the given glob pattern.")
+        return 1
+    data = analyze_run(filenames, scanner, plate_type, orientation=orientation,
+                       unit=time_unit, num_proc=processes)
 
-    for filename in filenames:
-        if not os.path.isfile(filename):
-            raise ValueError(filename, "does not exist")
-        if not filename.endswith(".G.tsv"):
-            raise ValueError(filename, "does not end with .G.tsv")
+    for name, df in iteritems(data):
+        df.to_csv(out + "_" + name + ".G.tsv", sep="\t")
 
-    for filename in filenames:
-        df = pd.read_csv(filename, sep="\t", index_col=0)
 
-        converted_df = convert_G_to_OD(df, *parameters)
-        converted_df.index = converted_df.index / 60
+@cli.command()
+@click.help_option("--help", "-h")
+@click.argument("parameters", nargs=3)
+@click.argument("pattern", type=str)
+def convert(pattern, parameters):
+    """
+    Transform G values to OD values.
 
-        outname = filename[:-5] + "OD.v2.tsv"
-        converted_df.to_csv(outname, sep="\t")
+    Provided with three parameters for fitting an exponential function,
+    transform tabular files of G values given by the glob pattern to OD values.
 
-convert_parser = subparsers.add_parser(
-    "convert", help="Convert the output G-value files to OD-values, using a set of calibration parameters."
-)
-convert_parser.add_argument("parameters", type=str, nargs=3)
-convert_parser.add_argument("files", type=str, nargs="+")
-convert_parser.set_defaults(func=convert_g_values)
+    """
+    filenames = glob(pattern)
+    if len(filenames) == 0:
+        LOGGER.critical("No files match the given glob pattern.")
+        return 1
+    parameters = tuple(map(float, parameters))
+    for path in tqdm(filenames):
+        if not path.endswith(".G.tsv"):
+            LOGGER.error("'%s' does not end with '.G.tsv'.", path)
+            continue
+        try:
+            g_df = read_csv(path, sep="\t", index_col=0)
+        except OSError as err:
+            LOGGER.error(str(err))
+            continue
+        od_df = g2od(g_df, *parameters)
+        od_df.to_csv(path[:-5] + "OD.tsv", sep="\t")

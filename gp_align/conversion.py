@@ -15,10 +15,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Growth profiler image analysis."""
+"""Convert values in data frames."""
 
-from __future__ import absolute_import
+from __future__ import absolute_import, division
 
-__author__ = "Kristian Jensen"
-__email__ = "krisj@biosustain.dtu.dk"
-__version__ = "0.1.0"
+from numpy import exp, log
+
+
+def g2od(df, a, b, c):
+    return exp((df - c) / a) - b
+
+
+def od2g(df, a, b, c):
+    return a * log(df + b) + c
