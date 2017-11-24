@@ -68,13 +68,14 @@ def analyze_run(images, scanner=1, plate_type=1, orientation="top-right",
     if plates is not None:
         raise NotImplementedError(
             "Selection of specific plates or trays is not possible yet.")
-    configure_run(scanner, plate_type, orientation)
+    config = configure_run(scanner, plate_type, orientation)
 
     data = dict()
     LOGGER.info("%d images in the series.", len(images))
     pool = multiprocessing.Pool(processes=num_proc)
     LOGGER.debug("Submitting tasks...")
-    result_iter = pool.imap_unordered(analyze_image, images)
+    result_iter = pool.imap_unordered(analyze_image,
+                                      [(i, config) for i in images])
     pool.close()
     with tqdm(total=len(images)) as pbar:
         for res in result_iter:
@@ -92,7 +93,7 @@ def analyze_run(images, scanner=1, plate_type=1, orientation="top-right",
                      plate, len(plate_data), len(plate_data[0]))
 
     output = dict()
-    columns = analyze_image.config["well_names"]
+    columns = config["well_names"]
     columns.insert(0, "time")
     for plate, plate_data in iteritems(data):
         plate_df = DataFrame(plate_data)
@@ -132,8 +133,7 @@ def configure_run(scanner, plate_type, orientation):
         "plate_positions"][calibration_name_left]
     config["right_positions"] = plate_specs[
         "plate_positions"][calibration_name_right]
-
-    analyze_image.config = config
+    return config
 
 
 def detect_edges(filename):
@@ -144,10 +144,10 @@ def detect_edges(filename):
     return canny(image, sigma=CANNY_SIGMA)
 
 
-def analyze_image(filename):
+def analyze_image(args):
     """Analyze all wells from all trays in one image."""
+    filename, config = args
     LOGGER.debug(filename)
-    config = analyze_image.config
     rows = config["rows"]
     columns = config["columns"]
     well_names = config["well_names"]

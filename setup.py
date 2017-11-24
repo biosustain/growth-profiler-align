@@ -16,7 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Growth profiler image analysis tool setup."""
+"""Setup the growth profiler image analysis tool."""
 
 from __future__ import absolute_import
 
