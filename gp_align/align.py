@@ -27,16 +27,21 @@ RADIUS = 20
 
 def align_plates(plate_image, calibration_plate):
     """
-    Both images should be converted to edges
-    Returns a vector (x, y) that describes the translation from the calibration
-    plate to the analyze plate.
+    Compute a translation between plate image and calibration image.
+
+    Both images should be converted to edges.
+
+    Returns
+    -------
+    numpy.array
+        A vector (x, y) that describes the translation from the calibration
+        plate to the analyzed plate.
     """
     r = int(RADIUS)
     best_offset = (0, 0)
     best_value = 0
-    # TODO: Potentially use vectorized numpy functions here.
-    for i in np.arange(-r, r, 2 * r + 1):
-        for j in np.arange(-r, r, 2 * r + 1):
+    for i in np.arange(-r, r + 1):
+        for j in np.arange(-r, r + 1):
             value = compare_images(plate_image, calibration_plate, i, j)
             if value > best_value:
                 best_value = value
@@ -47,8 +52,14 @@ def align_plates(plate_image, calibration_plate):
 
 def compare_images(image1, image2, x, y):
     """
-    Returns the number of pixels where both images are True/white/on when
-    they are overlapped with the given offset (x, y)."""
+    Find the overlap of white pixels between two images with offset.
+
+    Returns
+    -------
+    int
+        The number of pixels where both images are True/white/on when they are
+        overlapped with the given offset (x, y).
+    """
     shape1 = image1.shape
     shape2 = image2.shape
     image1_slice = image1[

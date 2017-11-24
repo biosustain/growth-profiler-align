@@ -30,7 +30,7 @@ from six import iteritems
 from tqdm import tqdm
 
 from gp_align.analysis import analyze_run
-from gp_align.conversion import convert_run
+from gp_align.conversion import g2od
 
 
 LOGGER = logging.getLogger()
@@ -89,7 +89,7 @@ def analyze(pattern, scanner, plate_type, orientation, out, time_unit,
                        unit=time_unit, num_proc=processes)
 
     for name, df in iteritems(data):
-        df.to_csv(out + "_" + name + ".G.tsv", sep="\t", index=False)
+        df.to_csv(out + "_" + name + ".G.tsv", sep="\t")
 
 
 @cli.command()
@@ -98,10 +98,11 @@ def analyze(pattern, scanner, plate_type, orientation, out, time_unit,
 @click.argument("pattern", type=str)
 def convert(pattern, parameters):
     """
-    Convert tabular G values to equivalent tables of OD values.
+    Transform G values to OD values.
 
-    Provided with three parameters for fitting an exponential function, convert
-    all the given files to OD values.
+    Provided with three parameters for fitting an exponential function,
+    transform tabular files of G values given by the glob pattern to OD values.
+
     """
     filenames = glob(pattern)
     if len(filenames) == 0:
@@ -113,9 +114,9 @@ def convert(pattern, parameters):
             LOGGER.error("'%s' does not end with '.G.tsv'.", path)
             continue
         try:
-            df = read_csv(path, sep="\t")
+            g_df = read_csv(path, sep="\t", index_col=0)
         except OSError as err:
             LOGGER.error(str(err))
             continue
-        df = convert_run(df, *parameters)
-        df.to_csv(path[:-5] + "OD.tsv", sep="\t", index=False)
+        od_df = g2od(g_df, *parameters)
+        od_df.to_csv(path[:-5] + "OD.tsv", sep="\t")

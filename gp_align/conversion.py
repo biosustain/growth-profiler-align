@@ -17,41 +17,14 @@
 
 """Convert values in data frames."""
 
-from __future__ import absolute_import
-
-import logging
+from __future__ import absolute_import, division
 
 from numpy import exp, log
 
-LOGGER = logging.getLogger(__name__)
+
+def g2od(df, a, b, c):
+    return exp((df - c) / a) - b
 
 
-def convert_run(df, *params):
-    """
-    Transform the G values in a given data frame.
-
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        A data frame with a 'time' column and G values.
-    params : float
-        Three parameters for the exponential function. (In principle
-        extensible to other functions and parameters.)
-
-    Returns
-    -------
-    pandas.DataFrame
-        The transformed data frame with OD values.
-
-    """
-    wells = [col for col in df.columns if col.lower() != "time"]
-    df.loc[:, wells] = df.loc[:, wells].apply(g2od, raw=True, args=params)
-    return df
-
-
-def g2od(vector, a, b, c):
-    return exp((vector - c) / a) - b
-
-
-def od2g(vector, a, b, c):
-    return a * log(vector + b) + c
+def od2g(df, a, b, c):
+    return a * log(df + b) + c

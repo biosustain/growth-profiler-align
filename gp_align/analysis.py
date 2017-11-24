@@ -101,7 +101,8 @@ def analyze_run(images, scanner=1, plate_type=1, orientation="top-right",
         plate_df.sort_values("time", inplace=True)
         plate_df["time"] -= plate_df["time"].iat[0]
         plate_df["time"] /= unit
-        output[plate] = plate_df.loc[:, columns]  # order columns
+        plate_df.set_index("time", inplace=True)
+        output[plate] = plate_df.loc[:, columns[1:]]  # order columns
     return output
 
 
@@ -118,11 +119,11 @@ def configure_run(scanner, plate_type, orientation):
                  rows, columns)
 
     calibration_name_left = "calibration_type_{:d}_left".format(plate_type)
-    config["left_image"] = calibrate_image(join(
+    config["left_image"] = detect_edges(join(
         DATA_DIR, calibration_name_left + ".png"))
 
     calibration_name_right = "calibration_type_{:d}_right".format(plate_type)
-    config["right_image"] = calibrate_image(join(
+    config["right_image"] = detect_edges(join(
         DATA_DIR, calibration_name_right + ".png"))
 
     config["well_names"] = well_names(rows, columns, orientation)
@@ -135,7 +136,7 @@ def configure_run(scanner, plate_type, orientation):
     analyze_image.config = config
 
 
-def calibrate_image(filename):
+def detect_edges(filename):
     """Return a normalized gray scale image."""
     LOGGER.debug(filename)
     image = rgb2grey(imread(filename))  # rgb2gray can be a noop
@@ -164,7 +165,7 @@ def analyze_image(filename):
 
     for i, (plate_name, plate_image) in enumerate(
             zip(config["plate_names"], plate_images)):
-        plate = data.setdefault(plate_name, dict())
+        plate = data[plate_name] = dict()
         plate["time"] = time
         if i // 3 == 0:
             calibration_plate = config["left_image"]
