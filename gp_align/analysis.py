@@ -110,7 +110,7 @@ def analyze_run(images, scanner=1, plate_type=1, orientation="top-right",
             len(plate_df.columns), len(columns))
         plate_df.sort_values(index, inplace=True)
         if parse_timestamps:
-            plate_df[index] -= plate_df[index][0]
+            plate_df[index] -= plate_df[index].iat[0]
             plate_df[index] /= unit
         plate_df.set_index(index, inplace=True)
         output[plate] = plate_df.loc[:, columns[1:]]  # order columns
