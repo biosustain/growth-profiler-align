@@ -30,7 +30,7 @@ terminal (Anaconda or other Python environment).
 
 .. code-block:: console
 
-    $ pip install https://github.com/biosustain/growth-profiler-align
+    $ pip install https://github.com/biosustain/growth-profiler-align/archive/master.zip
 
 This will install all necessary requirements as well as the ``gpalign``
 command line program.
@@ -64,22 +64,20 @@ Analyzing the Images
 
    .. code-block:: console
 
-       $ gpalign analyze --scanner <1 or 2> --plate_type <plate type>
-            --out <base path> "<terminal pattern for images>"
+       $ gpalign analyze --scanner <1 or 2> --plate_type <plate type> --out <base path> "<terminal pattern for images>"
 
 -  To analyse the plates in scanner 2, for example, run
 
    .. code-block:: console
 
-       $ gpalign analyze --scanner 2 --plate_type 2
-            --out Profiles/scanner_2 "Images/Scanner 2/*.Png"
+       $ gpalign analyze --scanner 2 --plate_type 2 --out Profiles/scanner_2 "Images/Scanner 2/*.Png"
 
 -  The output files will have ``_trayX.G.tsv`` appended to the output path.
    For the above example: ``Profiles/scanner_2_tray1.G.tsv`` and so on.
    The below table shows how the trays are organised in the scanners.
--  **NOTE: You should place your plates such that A1 is in the upper
+-  **N.B.:** You should place your plates such that A1 is in the upper
    right corner. Otherwise you should add the argument
-   ``--orientation bottom-left`` to the above commands.**
+   ``--orientation bottom-left`` to the above commands.
 
 Tray Layouts
 ~~~~~~~~~~~~
