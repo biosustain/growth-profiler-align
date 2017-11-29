@@ -207,7 +207,7 @@ def analyze_image(args):
                 columns)
             assert len(well_centers) == rows * columns
 
-            plate_image /= (1 - plate_image)
+            plate_image /= (1 - plate_image + 0.001)
 
             well_intensities = [find_well_intensity(plate_image, center)
                                 for center in well_centers]
