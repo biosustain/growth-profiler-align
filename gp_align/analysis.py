@@ -113,7 +113,8 @@ def analyze_run(images, scanner=1, plate_type=1, orientation="top-right",
             plate_df[index] -= plate_df[index].iat[0]
             plate_df[index] /= unit
         plate_df.set_index(index, inplace=True)
-        output[plate] = plate_df.loc[:, columns[1:]]  # order columns
+        ordered_wells = well_names(config["rows"], config["columns"], orientation="top-left")
+        output[plate] = plate_df[ordered_wells]  # order columns
     return output
 
 
