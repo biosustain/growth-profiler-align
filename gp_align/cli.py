@@ -36,6 +36,12 @@ from gp_align.conversion import g2od
 LOGGER = logging.getLogger()
 click_log.basic_config(LOGGER)
 
+try:
+    NUM_CPU = min(4, cpu_count())
+except NotImplementedError:
+    LOGGER.warning("Could not detect the number of cores - assuming only one.")
+    NUM_CPU = 1
+
 
 @click.group()
 @click.help_option("--help", "-h")
@@ -71,7 +77,7 @@ def cli():
               show_default=True,
               help="The unit of time can be either day = D, hour = h, "
                    "or minute = m.")
-@click.option("--processes", "-p", type=int, default=cpu_count(),
+@click.option("--processes", "-p", type=int, default=NUM_CPU,
               show_default=True, help="Select the number of processes to use.")
 @click.argument("pattern", type=str)
 def analyze(pattern, scanner, plate_type, orientation, out, time_unit,

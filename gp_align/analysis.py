@@ -24,6 +24,7 @@ import json
 import logging
 import multiprocessing
 from os.path import join, dirname, basename, splitext
+from sys import float_info
 
 import numpy as np
 from pandas import DataFrame, Timedelta
@@ -47,20 +48,28 @@ PLATES = {
 
 
 def analyze_run(images, scanner=1, plate_type=1, orientation="top-right",
-                plates=None, unit="h", num_proc=1):
+                plates=None, unit="h", parse_timestamps=True, num_proc=1):
     """
     Analyse a list of images from the Growth Profiler.
 
     Parameters
     ----------
-    plate_type :
-        The type of plates used
+    images : iterable
+        List of growth profiler image file names.
+    scanner : {1, 2}, optional
+        On which scanner the images were taken.
+    plate_type : {1, 2, 3}, optional
+        The type of plates used.
+    orientation : {"top-right", "bottom-left"}, optional
+        The location of the A1 well of the plate in the scanner.
     plates : optional
         Specify which plates will be analysed e.g. [1, 2, 3] for the three left
         plates. Default (None) is to analyze all plates.
     unit : {'D', 'h', 'm'}, optional
         The unit of time. Any valid numpy datetime unit but usefully either
         D, h, or m.
+    parse_timestamps : bool, optional
+        Whether or not to parse the image names as timestamps.
     num_proc : int, optional
         Number of processes to use for the calculations.
     """
@@ -68,7 +77,7 @@ def analyze_run(images, scanner=1, plate_type=1, orientation="top-right",
     if plates is not None:
         raise NotImplementedError(
             "Selection of specific plates or trays is not possible yet.")
-    config = configure_run(scanner, plate_type, orientation)
+    config = configure_run(scanner, plate_type, orientation, parse_timestamps)
 
     data = dict()
     LOGGER.info("%d images in the series.", len(images))
@@ -94,21 +103,29 @@ def analyze_run(images, scanner=1, plate_type=1, orientation="top-right",
 
     output = dict()
     columns = config["well_names"]
-    columns.insert(0, "time")
+    index = config["index_name"]
+    columns.insert(0, index)
+    well_order = well_names(config["rows"], config["columns"], "top-left")
     for plate, plate_data in iteritems(data):
         plate_df = DataFrame(plate_data)
         assert len(plate_df.columns) == len(columns), "{:d} != {:d}".format(
             len(plate_df.columns), len(columns))
-        plate_df.sort_values("time", inplace=True)
-        plate_df["time"] -= plate_df["time"].iat[0]
-        plate_df["time"] /= unit
-        plate_df.set_index("time", inplace=True)
-        output[plate] = plate_df.loc[:, columns[1:]]  # order columns
+        plate_df.sort_values(index, inplace=True)
+        if parse_timestamps:
+            plate_df[index] -= plate_df[index].iat[0]
+            plate_df[index] /= unit
+        plate_df.set_index(index, inplace=True)
+        output[plate] = plate_df[well_order]  # order columns
     return output
 
 
-def configure_run(scanner, plate_type, orientation):
+def configure_run(scanner, plate_type, orientation, parse_dates):
     config = dict()
+    config["parse_dates"] = parse_dates
+    if parse_dates:
+        config["index_name"] = "time"
+    else:
+        config["index_name"] = "source"
     config["plate_names"] = PLATES[scanner]
 
     with io.open(join(DATA_DIR, "plate_specs.json"), encoding=None) as file_h:
@@ -152,6 +169,15 @@ def analyze_image(args):
     columns = config["columns"]
     well_names = config["well_names"]
 
+    name = splitext(basename(filename))[0]
+    if config["parse_dates"]:
+        try:
+            index = convert_to_datetime(fix_date(name))
+        except ValueError as err:
+            return {"error": str(err), "filename": filename}
+    else:
+        index = name
+
     try:
         image = rgb2grey(imread(filename))
     except OSError as err:
@@ -160,13 +186,11 @@ def analyze_image(args):
     plate_images = cut_image(image)
 
     data = dict()
-    time = convert_to_datetime(
-        fix_date(splitext(basename(filename))[0]))
 
     for i, (plate_name, plate_image) in enumerate(
             zip(config["plate_names"], plate_images)):
         plate = data[plate_name] = dict()
-        plate["time"] = time
+        plate[config["index_name"]] = index
         if i // 3 == 0:
             calibration_plate = config["left_image"]
             positions = config["left_positions"]
@@ -184,7 +208,7 @@ def analyze_image(args):
                 columns)
             assert len(well_centers) == rows * columns
 
-            plate_image /= (1 - plate_image)
+            plate_image /= (1 - plate_image + float_info.epsilon)
 
             well_intensities = [find_well_intensity(plate_image, center)
                                 for center in well_centers]
