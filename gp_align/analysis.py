@@ -24,6 +24,7 @@ import json
 import logging
 import multiprocessing
 from os.path import join, dirname, basename, splitext
+from sys import float_info
 
 import numpy as np
 from pandas import DataFrame, Timedelta
@@ -104,6 +105,7 @@ def analyze_run(images, scanner=1, plate_type=1, orientation="top-right",
     columns = config["well_names"]
     index = config["index_name"]
     columns.insert(0, index)
+    well_order = well_names(config["rows"], config["columns"], "top-left")
     for plate, plate_data in iteritems(data):
         plate_df = DataFrame(plate_data)
         assert len(plate_df.columns) == len(columns), "{:d} != {:d}".format(
@@ -113,8 +115,7 @@ def analyze_run(images, scanner=1, plate_type=1, orientation="top-right",
             plate_df[index] -= plate_df[index].iat[0]
             plate_df[index] /= unit
         plate_df.set_index(index, inplace=True)
-        ordered_wells = well_names(config["rows"], config["columns"], orientation="top-left")
-        output[plate] = plate_df[ordered_wells]  # order columns
+        output[plate] = plate_df[well_order]  # order columns
     return output
 
 
@@ -207,7 +208,7 @@ def analyze_image(args):
                 columns)
             assert len(well_centers) == rows * columns
 
-            plate_image /= (1 - plate_image + 0.001)
+            plate_image /= (1 - plate_image + float_info.epsilon)
 
             well_intensities = [find_well_intensity(plate_image, center)
                                 for center in well_centers]
