@@ -21,15 +21,16 @@ from __future__ import absolute_import
 
 import logging
 from glob import glob
+from itertools import chain
 from multiprocessing import cpu_count
 
 import click
 import click_log
 from pandas import read_csv
-from six import iteritems
+from six import iteritems, itervalues
 from tqdm import tqdm
 
-from gp_align.analysis import analyze_run
+from gp_align.analysis import analyze_run, PLATES
 from gp_align.conversion import g2od
 
 
@@ -73,6 +74,9 @@ def cli():
 @click.option("--scanner", type=click.IntRange(min=1, max=2),
               default=1, show_default=True,
               help="The scanner used 1 = left, 2 = right.")
+@click.option("--trays", default=None, multiple=True,
+              help="The name(s) of specific trays as listed in the readme. "
+              "1-6 for scanner 1 and 7-12 for scanner 2.")
 @click.option("--time-unit", default="h", type=click.Choice(["D", "h", "m"]),
               show_default=True,
               help="The unit of time can be either day = D, hour = h, "
@@ -80,7 +84,7 @@ def cli():
 @click.option("--processes", "-p", type=int, default=NUM_CPU,
               show_default=True, help="Select the number of processes to use.")
 @click.argument("pattern", type=str)
-def analyze(pattern, scanner, plate_type, orientation, out, time_unit,
+def analyze(pattern, scanner, plate_type, orientation, out, trays, time_unit,
             processes):
     """
     Analyze a series of images.
@@ -92,7 +96,7 @@ def analyze(pattern, scanner, plate_type, orientation, out, time_unit,
         LOGGER.critical("No files match the given glob pattern.")
         return 1
     data = analyze_run(filenames, scanner, plate_type, orientation=orientation,
-                       unit=time_unit, num_proc=processes)
+                       plates=trays, unit=time_unit, num_proc=processes)
 
     for name, df in iteritems(data):
         df.to_csv(out + "_" + name + ".G.tsv", sep="\t")
@@ -100,9 +104,12 @@ def analyze(pattern, scanner, plate_type, orientation, out, time_unit,
 
 @cli.command()
 @click.help_option("--help", "-h")
+@click.option("--out", "-o", default=None, type=str,
+              help="The desired output filename. Only permissible when "
+                   "processing one file otherwise it is ignored.")
 @click.argument("parameters", nargs=3)
 @click.argument("pattern", type=str)
-def convert(pattern, parameters):
+def convert(pattern, parameters, out):
     """
     Transform G values to OD values.
 
@@ -111,6 +118,10 @@ def convert(pattern, parameters):
 
     """
     filenames = glob(pattern)
+    if out is not None and len(filenames) != 1:
+        LOGGER.critical(
+            "Cannot name the output file when processing more than one file.")
+        return 2
     if len(filenames) == 0:
         LOGGER.critical("No files match the given glob pattern.")
         return 1
