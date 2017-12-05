@@ -62,9 +62,9 @@ def analyze_run(images, scanner=1, plate_type=1, orientation="top-right",
         The type of plates used.
     orientation : {"top-right", "bottom-left"}, optional
         The location of the A1 well of the plate in the scanner.
-    plates : optional
-        Specify which plates will be analysed e.g. [1, 2, 3] for the three left
-        plates. Default (None) is to analyze all plates.
+    plates : iterable, optional
+        Specify which plates will be analysed, e.g., tray1, tray4,
+        tray6. Default (None) is to analyze all plates.
     unit : {'D', 'h', 'm'}, optional
         The unit of time. Any valid numpy datetime unit but usefully either
         D, h, or m.
@@ -74,10 +74,8 @@ def analyze_run(images, scanner=1, plate_type=1, orientation="top-right",
         Number of processes to use for the calculations.
     """
     unit = Timedelta(1, unit=unit)
-    if plates is not None:
-        raise NotImplementedError(
-            "Selection of specific plates or trays is not possible yet.")
-    config = configure_run(scanner, plate_type, orientation, parse_timestamps)
+    config = configure_run(scanner, plate_type, plates, orientation,
+                           parse_timestamps)
 
     data = dict()
     LOGGER.info("%d images in the series.", len(images))
@@ -119,14 +117,26 @@ def analyze_run(images, scanner=1, plate_type=1, orientation="top-right",
     return output
 
 
-def configure_run(scanner, plate_type, orientation, parse_dates):
+def configure_run(scanner, plate_type, plates, orientation, parse_dates):
     config = dict()
     config["parse_dates"] = parse_dates
     if parse_dates:
         config["index_name"] = "time"
     else:
         config["index_name"] = "source"
-    config["plate_names"] = PLATES[scanner]
+    if plates is None:
+        config["plate_names"] = PLATES[scanner]
+    else:
+        allowed = frozenset(PLATES[scanner])
+        for p in plates:
+            if p not in allowed:
+                raise ValueError(
+                    "Specified tray '{}' does not exist or only on the other "
+                    "scanner.".format(p))
+        config["plate_names"] = plates
+
+    plate_index = {p: i for i, p in enumerate(PLATES[scanner])}
+    config["plate_indexes"] = [plate_index[p] for p in config["plate_names"]]
 
     with open_binary(gp_align.data, "plate_specs.json") as file_handle:
         plate_specs = json.load(file_handle)
@@ -187,10 +197,10 @@ def analyze_image(args):
 
     data = dict()
 
-    for i, (plate_name, plate_image) in enumerate(
-            zip(config["plate_names"], plate_images)):
+    for i, plate_name in zip(config["plate_indexes"], config["plate_names"]):
         plate = data[plate_name] = dict()
         plate[config["index_name"]] = index
+        plate_image = plate_images[i]
         if i // 3 == 0:
             calibration_plate = config["left_image"]
             positions = config["left_positions"]
