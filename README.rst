@@ -78,6 +78,12 @@ Analyzing the Images
 -  **N.B.:** You should place your plates such that A1 is in the upper
    right corner. Otherwise you should add the argument
    ``--orientation bottom-left`` to the above commands.
+-  You can choose to analyse individual plates only by specifying the
+  ``--trays`` parameter one or more times:
+
+   .. code-block:: console
+
+       $ gpalign analyze --scanner 2 --plate_type 2 --trays tray7 --trays tray10 --out Profiles/scanner_2 "Images/Scanner 2/*.Png"
 
 Tray Layouts
 ~~~~~~~~~~~~
