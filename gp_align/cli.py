@@ -21,20 +21,19 @@ from __future__ import absolute_import
 
 import logging
 from glob import glob
-from itertools import chain
 from multiprocessing import cpu_count
 
 import click
 import click_log
 from pandas import read_csv
-from six import iteritems, itervalues
+from six import iteritems
 from tqdm import tqdm
 
 from gp_align.analysis import analyze_run, PLATES
 from gp_align.conversion import g2od
 
 
-LOGGER = logging.getLogger()
+LOGGER = logging.getLogger(__name__.split(".", 1)[0])
 click_log.basic_config(LOGGER)
 
 try:
@@ -68,15 +67,15 @@ def cli():
               default="top-right", show_default=True,
               help="The corner position of plate well A1.")
 @click.option("--plate-type", type=click.IntRange(min=1, max=3),
-              default=1, show_default=True,
+              default=1, show_default=True, metavar="[1|2|3]",
               help="The plate type where 1 = 96 black wells, 2 = 96 white "
                    "wells, and 3 = 24 wells.")
 @click.option("--scanner", type=click.IntRange(min=1, max=2),
-              default=1, show_default=True,
+              default=1, show_default=True, metavar="[1|2]",
               help="The scanner used 1 = left, 2 = right.")
-@click.option("--trays", default=None, multiple=True,
-              help="The name(s) of specific trays as listed in the readme. "
-              "1-6 for scanner 1 and 7-12 for scanner 2.")
+@click.option("--trays", default=None, metavar="e.g., 1,5,6",
+              help="A comma separated list of tray numbers as listed in the "
+                   "README (1-6 for scanner 1 and 7-12 for scanner 2).")
 @click.option("--time-unit", default="h", type=click.Choice(["D", "h", "m"]),
               show_default=True,
               help="The unit of time can be either day = D, hour = h, "
@@ -84,8 +83,8 @@ def cli():
 @click.option("--processes", "-p", type=int, default=NUM_CPU,
               show_default=True, help="Select the number of processes to use.")
 @click.argument("pattern", type=str)
-def analyze(pattern, scanner, plate_type, orientation, out, trays, time_unit,
-            processes):
+def analyze(pattern, scanner, plate_type, orientation, out, trays,
+            time_unit, processes):
     """
     Analyze a series of images.
 
@@ -95,8 +94,17 @@ def analyze(pattern, scanner, plate_type, orientation, out, trays, time_unit,
     if len(filenames) == 0:
         LOGGER.critical("No files match the given glob pattern.")
         return 1
+    if trays is None:
+        plates = PLATES[scanner]
+    else:
+        plates = ["tray" + num.strip() for num in trays.split(",")]
+        if not frozenset(plates).issubset(PLATES[scanner]):
+            raise click.BadParameter(
+                "'{}' contains invalid trays for scanner {}. "
+                "Please refer to the README.".format(trays, scanner))
+
     data = analyze_run(filenames, scanner, plate_type, orientation=orientation,
-                       plates=trays, unit=time_unit, num_proc=processes)
+                       plates=plates, unit=time_unit, num_proc=processes)
 
     for name, df in iteritems(data):
         df.to_csv(out + "_" + name + ".G.tsv", sep="\t")
@@ -126,9 +134,22 @@ def convert(pattern, parameters, out):
         LOGGER.critical("No files match the given glob pattern.")
         return 1
     parameters = tuple(map(float, parameters))
+
+    # Process the conversion of a single file with custom output name.
+    if out is not None and len(filenames) == 1:
+        try:
+            g_df = read_csv(filenames[0], sep="\t", index_col=0)
+        except OSError as err:
+            LOGGER.error(str(err))
+            return 1
+        od_df = g2od(g_df, *parameters)
+        od_df.to_csv(out, sep="\t")
+        return
+
+    # Process matching files normally.
     for path in tqdm(filenames):
         if not path.endswith(".G.tsv"):
-            LOGGER.error("'%s' does not end with '.G.tsv'.", path)
+            LOGGER.error("'%s' does not end with '.G.tsv'. Ignored.", path)
             continue
         try:
             g_df = read_csv(path, sep="\t", index_col=0)
