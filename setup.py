@@ -23,9 +23,5 @@ from __future__ import absolute_import
 from setuptools import setup
 
 
-setup(
-    entry_points="""
-        [console_scripts]
-        gpalign=gp_align.cli:cli
-    """
-)
+# All arguments are defined in `setup.cfg`.
+setup()
