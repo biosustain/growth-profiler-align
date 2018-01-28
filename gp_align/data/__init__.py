@@ -1,7 +1,6 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright 2017 Novo Nordisk Foundation Center for Biosustainability,
+# Copyright 2018 Novo Nordisk Foundation Center for Biosustainability,
 # Technical University of Denmark.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,12 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Setup the growth profiler image analysis tool."""
+"""Provide calibration images and information."""
 
 from __future__ import absolute_import
 
-from setuptools import setup
-
-
-# All arguments are defined in `setup.cfg`.
-setup()
