@@ -212,12 +212,12 @@ def analyze_image(args):
             edge_image = canny(plate_image, CANNY_SIGMA)
             offset = align_plates(edge_image, calibration_plate)
 
-            # Add the offset to get the well centers in the analyte plate
+            # Add the offset to get the well centers in the analyzed plate.
             well_centers = generate_well_centers(
                 np.array(positions) + offset, config["plate_size"], rows,
                 columns)
             assert len(well_centers) == rows * columns
-
+            # Add a minimal value to avoid zero division.
             plate_image /= (1 - plate_image + float_info.epsilon)
 
             well_intensities = [find_well_intensity(plate_image, center)

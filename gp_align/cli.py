@@ -83,7 +83,7 @@ def cli():
                    "or minute = m.")
 @click.option("--processes", "-p", type=int, default=NUM_CPU,
               show_default=True, help="Select the number of processes to use.")
-@click.argument("pattern", type=str)
+@click.argument("pattern", type=str, metavar="GLOB")
 def analyze(pattern, scanner, plate_type, orientation, out, trays,
             time_unit, processes):
     """
@@ -116,8 +116,8 @@ def analyze(pattern, scanner, plate_type, orientation, out, trays,
 @click.option("--out", "-o", default=None, type=str,
               help="The desired output filename. Only permissible when "
                    "processing one file otherwise it is ignored.")
-@click.argument("parameters", nargs=3)
-@click.argument("pattern", type=str)
+@click.argument("parameters", nargs=3, metavar="A B C")
+@click.argument("pattern", type=str, metavar="GLOB")
 def convert(pattern, parameters, out):
     """
     Transform G values to OD values.
@@ -128,9 +128,8 @@ def convert(pattern, parameters, out):
     """
     filenames = glob(pattern)
     if out is not None and len(filenames) != 1:
-        LOGGER.critical(
+        LOGGER.warning(
             "Cannot name the output file when processing more than one file.")
-        return 2
     if len(filenames) == 0:
         LOGGER.critical("No files match the given glob pattern.")
         return 1
