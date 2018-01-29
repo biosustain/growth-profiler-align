@@ -19,11 +19,10 @@
 
 from __future__ import absolute_import
 
-import io
 import json
 import logging
 import multiprocessing
-from os.path import join, dirname, basename, splitext
+from os.path import basename, splitext
 from sys import float_info
 
 import numpy as np
@@ -33,13 +32,14 @@ from skimage.feature import canny
 from skimage.io import imread
 from six import iteritems
 from tqdm import tqdm
+from importlib_resources import open_binary, path
 
+import gp_align.data
 from gp_align.align import align_plates
 from gp_align.parse_time import fix_date, convert_to_datetime
 from gp_align.util import well_names, cut_image
 
 LOGGER = logging.getLogger(__name__)
-DATA_DIR = join(dirname(__file__), "data")
 CANNY_SIGMA = 1.0
 PLATES = {
     1: ["tray1", "tray2", "tray3", "tray4", "tray5", "tray6"],
@@ -138,8 +138,8 @@ def configure_run(scanner, plate_type, plates, orientation, parse_dates):
     plate_index = {p: i for i, p in enumerate(PLATES[scanner])}
     config["plate_indexes"] = [plate_index[p] for p in config["plate_names"]]
 
-    with io.open(join(DATA_DIR, "plate_specs.json"), encoding=None) as file_h:
-        plate_specs = json.load(file_h)
+    with open_binary(gp_align.data, "plate_specs.json") as file_handle:
+        plate_specs = json.load(file_handle)
     rows, columns = plate_specs["rows_and_columns"][str(plate_type)]
     config["rows"] = rows
     config["columns"] = columns
@@ -147,12 +147,12 @@ def configure_run(scanner, plate_type, plates, orientation, parse_dates):
                  rows, columns)
 
     calibration_name_left = "calibration_type_{:d}_left".format(plate_type)
-    config["left_image"] = detect_edges(join(
-        DATA_DIR, calibration_name_left + ".png"))
+    with path(gp_align.data, calibration_name_left + ".png") as file_path:
+        config["left_image"] = detect_edges(file_path)
 
     calibration_name_right = "calibration_type_{:d}_right".format(plate_type)
-    config["right_image"] = detect_edges(join(
-        DATA_DIR, calibration_name_right + ".png"))
+    with path(gp_align.data, calibration_name_right + ".png") as file_path:
+        config["right_image"] = detect_edges(file_path)
 
     config["well_names"] = well_names(rows, columns, orientation)
     config["plate_size"] = plate_specs["plate_size"]

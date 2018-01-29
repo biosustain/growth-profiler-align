@@ -83,7 +83,7 @@ Analyzing the Images
 
    .. code-block:: console
 
-       $ gpalign analyze --scanner 2 --plate_type 2 --trays tray7 --trays tray10 --out Profiles/scanner_2 "Images/Scanner 2/*.Png"
+       $ gpalign analyze --scanner 2 --plate_type 2 --trays 7,10 --out Profiles/scanner_2 "Images/Scanner 2/*.Png"
 
 Tray Layouts
 ~~~~~~~~~~~~
